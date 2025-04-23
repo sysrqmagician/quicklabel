@@ -1,16 +1,19 @@
 use std::path::PathBuf;
 
 use iced::{
-    Element, Font, Length, Task,
+    Element, Font, Task,
     font::Weight,
-    widget::{column, container, horizontal_space, row, text},
+    widget::{button, column, container, horizontal_space, row, text},
 };
-use views::setup::{SetupMessage, SetupState};
+use views::{
+    options::{OptionsMessage, OptionsState},
+    setup::{SetupMessage, SetupState},
+};
 
 mod views;
 
 #[derive(Debug, Clone)]
-struct State {
+struct SharedState {
     /// Dumping directory with images
     input_dir: PathBuf,
     /// Root directory of dreambooth-style dataset
@@ -18,31 +21,48 @@ struct State {
     /// If None, trashed images will be left in input_dir
     trash_dir: Option<PathBuf>,
 
-    /// (repeats, subject class)
-    datasets: Vec<Dataset>,
+    classes: Vec<Class>,
+    prompt_prefill: Option<String>,
+}
 
-    label_prefill: Option<String>,
+impl Into<SharedState> for SetupState {
+    fn into(self) -> SharedState {
+        SharedState {
+            input_dir: self
+                .input_dir
+                .expect("Unreachable due to on_press_maybe condition"),
+            output_dir: self
+                .output_dir
+                .expect("Unreachable due to on_press_maybe condition"),
+            trash_dir: self.trash_dir,
+            classes: Vec::new(),
+            prompt_prefill: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     NoOp,
+    ResetState,
     Setup(SetupMessage),
     SetupDone(SetupState),
+    Options(OptionsMessage),
+    FatalError(String),
 }
 
 #[derive(Debug, Clone)]
-struct Dataset {
-    class: String,
+struct Class {
+    label: String,
     repeats: usize,
-    path: PathBuf,
 }
 
 #[derive(Debug, Clone)]
 enum View {
     Setup(SetupState),
-    // Options(State),
+    Options(SharedState, OptionsState),
     // Labeling(State),
+    FatalError(String),
 }
 
 impl Default for View {
@@ -58,18 +78,38 @@ impl Default for View {
 impl View {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::NoOp => Task::none(),
-            Message::Setup(setup_message) => {
+            Message::NoOp => {}
+
+            Message::ResetState => {
+                *self = View::default();
+            }
+
+            Message::FatalError(error_description) => {
+                *self = View::FatalError(error_description);
+            }
+
+            Message::Setup(message) => {
                 if let View::Setup(setup) = self {
-                    views::setup::update(setup, setup_message)
+                    return views::setup::update(setup, message);
                 } else {
                     panic!("Setup Message sent by other view?! -- {:#?}", self);
                 }
             }
+
             Message::SetupDone(setup) => {
-                todo!()
+                *self = View::Options(setup.into(), OptionsState::default());
+            }
+
+            Message::Options(message) => {
+                if let View::Options(shared, local) = self {
+                    return views::options::update(shared, local, message);
+                } else {
+                    panic!("Options Message sent by other view?! -- {:#?}", self);
+                }
             }
         }
+
+        Task::none()
     }
 
     pub fn view(&self) -> Element<Message> {
@@ -87,6 +127,12 @@ impl View {
             ],
             container(match self {
                 View::Setup(setup) => views::setup::view(setup),
+                View::Options(shared, local) => views::options::view(shared, local),
+                View::FatalError(message) => column![
+                    text(message),
+                    button("Restart").on_press(Message::ResetState)
+                ]
+                .into(),
             })
             .padding(10)
         ]
@@ -96,7 +142,9 @@ impl View {
 
     fn title(&self) -> &str {
         match self {
-            View::Setup(_) => "Setup",
+            View::Setup(..) => "Directories",
+            View::Options(..) => "Options",
+            View::FatalError(..) => "Fatal Error",
         }
     }
 }
