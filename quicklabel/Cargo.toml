@@ -1,0 +1,11 @@
+[package]
+name = "quicklabel"
+version = "0.1.0"
+edition = "2024"
+repository = "https://github.com/sysrqmagician/quicklabel"
+
+[dependencies]
+blake2b_simd = "1.0.3"
+iced = { version = "0.13.1", features = ["image", "tokio"] }
+rfd = "0.15.3"
+tokio = { version = "1.44.2", features = ["full"] }
