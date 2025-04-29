@@ -1,4 +1,4 @@
-use std::{env::consts::OS, path::PathBuf};
+use std::path::PathBuf;
 
 use iced::{
     Element, Font, Task,
@@ -52,6 +52,7 @@ pub enum Message {
     GoOptions,
     GoLabel,
     Labeling(LabelingMessage),
+    ShowText(String, String),
     FatalError(String),
 }
 
@@ -74,7 +75,7 @@ enum View {
     Setup(SetupState),
     Options(SharedState, OptionsState),
     Labeling(SharedState, LabelingState),
-    FatalError(String),
+    FatalError(Option<String>, String),
 }
 
 impl Default for View {
@@ -97,7 +98,11 @@ impl View {
             }
 
             Message::FatalError(error_description) => {
-                *self = View::FatalError(error_description);
+                *self = View::FatalError(None, error_description);
+            }
+
+            Message::ShowText(title, body) => {
+                *self = View::FatalError(Some(title), body);
             }
 
             Message::Setup(message) => {
@@ -177,7 +182,7 @@ impl View {
                 View::Setup(setup) => views::setup::view(setup),
                 View::Options(shared, local) => views::options::view(shared, local),
                 View::Labeling(shared, local) => views::labeling::view(shared, local),
-                View::FatalError(message) => column![
+                View::FatalError(.., message) => column![
                     text(message),
                     button("Restart").on_press(Message::ResetState)
                 ]
@@ -193,7 +198,13 @@ impl View {
         match self {
             View::Setup(..) => "Directories",
             View::Options(..) => "Options",
-            View::FatalError(..) => "Fatal Error",
+            View::FatalError(title, ..) => {
+                if let Some(title) = title {
+                    title
+                } else {
+                    "Fatal Error"
+                }
+            }
             View::Labeling(..) => "Label",
         }
     }

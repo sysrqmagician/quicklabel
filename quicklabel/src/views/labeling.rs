@@ -27,6 +27,7 @@ pub enum LabelingMessage {
     FinishIndexing(Vec<PathBuf>),
     NextImage,
     NoImagesLeft,
+    TrashCurrent,
 }
 
 impl Into<Message> for LabelingMessage {
@@ -114,7 +115,45 @@ pub fn update(
             local.input_prompt = value;
         }
 
-        LabelingMessage::NoImagesLeft => todo!(),
+        LabelingMessage::NoImagesLeft => {
+            return Task::done(Message::ShowText(
+                "Done!".into(),
+                "No more images to label.".into(),
+            ));
+        }
+
+        LabelingMessage::TrashCurrent => {
+            let current_image = local
+                .current_image
+                .clone()
+                .expect("Submitting without image?!");
+
+            if let Some(mut trash_destination) = shared.trash_dir.clone() {
+                trash_destination.push(&current_image.file_name().unwrap());
+
+                return Task::perform(
+                    async move {
+                        if let Err(e) = std::fs::copy(&current_image, &trash_destination) {
+                            return Message::FatalError(format!(
+                                "Failed to move {current_image:#?} to {trash_destination:#?}: {e}"
+                            ));
+                        }
+
+                        if let Err(e) = std::fs::remove_file(&current_image) {
+                            return Message::FatalError(format!(
+                                "Failed to delete {current_image:#?}: {e}"
+                            ));
+                        }
+
+                        LabelingMessage::NextImage.into()
+                    },
+                    |out| out,
+                );
+            } else {
+                // If there isn't a trash dir, have trashed images remain in input dir
+                return Task::done(LabelingMessage::NextImage.into());
+            }
+        }
         LabelingMessage::SubmitLabel(class_index) => {
             let current_image = local
                 .current_image
@@ -170,6 +209,7 @@ pub fn view<'a>(shared: &'a SharedState, local: &'a LabelingState) -> Element<'a
                 .into()
         }))
         .spacing(5),
+        button("Trash").on_press(LabelingMessage::TrashCurrent.into()),
         container(if let Some(path) = &local.current_image {
             Element::from(image(path))
         } else {
