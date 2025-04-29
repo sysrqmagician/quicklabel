@@ -201,7 +201,13 @@ impl View {
 
 #[tokio::main]
 async fn main() {
-    iced::application("QuickLabel", View::update, View::view)
+    println!(
+        "quicklabel v{}; https://github.com/sysrqmagician/quicklabel\nCopyright (c) 2025, sysrqmagician <sysrqmagician@proton.me>\n",
+        env!("CARGO_PKG_VERSION")
+    );
+    println!(include_str!("../../LICENSE"));
+
+    iced::application("quicklabel", View::update, View::view)
         .run()
         .expect("Failed to run GUI");
 }
