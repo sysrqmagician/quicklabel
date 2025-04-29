@@ -216,7 +216,7 @@ async fn main() {
         "quicklabel v{}; https://github.com/sysrqmagician/quicklabel\nCopyright (c) 2025, sysrqmagician <sysrqmagician@proton.me>\n",
         env!("CARGO_PKG_VERSION")
     );
-    println!(include_str!("../../LICENSE"));
+    println!(include_str!("../LICENSE"));
 
     iced::application("quicklabel", View::update, View::view)
         .run()
