@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{env::consts::OS, path::PathBuf};
 
 use iced::{
     Element, Font, Task,
@@ -6,13 +6,14 @@ use iced::{
     widget::{button, column, container, horizontal_space, row, text},
 };
 use views::{
+    labeling::{LabelingMessage, LabelingState},
     options::{OptionsMessage, OptionsState},
     setup::{SetupMessage, SetupState},
 };
 
 mod views;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct SharedState {
     /// Dumping directory with images
     input_dir: PathBuf,
@@ -48,6 +49,9 @@ pub enum Message {
     Setup(SetupMessage),
     SetupDone(SetupState),
     Options(OptionsMessage),
+    GoOptions,
+    GoLabel,
+    Labeling(LabelingMessage),
     FatalError(String),
 }
 
@@ -57,11 +61,19 @@ struct Class {
     repeats: usize,
 }
 
+impl Class {
+    fn path(&self, mut output_root: PathBuf) -> PathBuf {
+        output_root.push(format!("{}_{}", self.repeats, self.label));
+
+        output_root
+    }
+}
+
 #[derive(Debug, Clone)]
 enum View {
     Setup(SetupState),
     Options(SharedState, OptionsState),
-    // Labeling(State),
+    Labeling(SharedState, LabelingState),
     FatalError(String),
 }
 
@@ -107,6 +119,42 @@ impl View {
                     panic!("Options Message sent by other view?! -- {:#?}", self);
                 }
             }
+
+            Message::GoOptions => {
+                if let View::Labeling(shared, ..) = self {
+                    *self = View::Options(std::mem::take(shared), OptionsState::default());
+                } else {
+                    panic!("GoOptions from other view?! -- {:#?}", self);
+                }
+            }
+
+            Message::GoLabel => {
+                if let View::Options(shared, ..) = self {
+                    // Ensure all directories exist before proceeding
+                    for class in &shared.classes {
+                        let class_dir = class.path(shared.output_dir.clone());
+                        if let Err(e) = std::fs::create_dir_all(&class_dir) {
+                            return Task::done(Message::FatalError(format!(
+                                "Unable to create directory {class_dir:#?}: {e}"
+                            )));
+                        }
+                    }
+
+                    *self = View::Labeling(std::mem::take(shared), LabelingState::default());
+
+                    return Task::done(LabelingMessage::Index.into());
+                } else {
+                    panic!("GoLabel from other view?! -- {:#?}", self);
+                }
+            }
+
+            Message::Labeling(message) => {
+                if let View::Labeling(shared, local) = self {
+                    return views::labeling::update(shared, local, message);
+                } else {
+                    panic!("Labeling Message sent by other view?! -- {:#?}", self);
+                }
+            }
         }
 
         Task::none()
@@ -128,6 +176,7 @@ impl View {
             container(match self {
                 View::Setup(setup) => views::setup::view(setup),
                 View::Options(shared, local) => views::options::view(shared, local),
+                View::Labeling(shared, local) => views::labeling::view(shared, local),
                 View::FatalError(message) => column![
                     text(message),
                     button("Restart").on_press(Message::ResetState)
@@ -145,6 +194,7 @@ impl View {
             View::Setup(..) => "Directories",
             View::Options(..) => "Options",
             View::FatalError(..) => "Fatal Error",
+            View::Labeling(..) => "Label",
         }
     }
 }

@@ -1,5 +1,3 @@
-use std::{default, path::PathBuf};
-
 use iced::{
     Element, Font, Task,
     font::Weight,
@@ -52,26 +50,12 @@ pub fn view<'a>(shared: &'a SharedState, local: &'a OptionsState) -> Element<'a,
                 ..Default::default()
             }),
             horizontal_space(),
-            button("Label")
+            button("Label").on_press_maybe(if shared.classes.len() != 0 {
+                Some(Message::GoLabel)
+            } else {
+                None
+            })
         ],
-        if shared.classes.len() != 0 {
-            column(shared.classes.iter().enumerate().map(|(index, set)| {
-                row![
-                    text(format!(
-                        "{} ({} repeats)",
-                        &set.label,
-                        set.repeats.to_string()
-                    )),
-                    button("Remove").on_press(OptionsMessage::DeleteClass(index).into())
-                ]
-                .spacing(10)
-                .into()
-            }))
-            .spacing(5)
-            .into()
-        } else {
-            Element::from(text("None"))
-        },
         row![
             text_input("Class Name", &local.class_input_label)
                 .on_input(|x| OptionsMessage::InputChange((InputKind::ClassLabel, x)).into()),
@@ -92,6 +76,24 @@ pub fn view<'a>(shared: &'a SharedState, local: &'a OptionsState) -> Element<'a,
             )
         ]
         .spacing(10),
+        if shared.classes.len() != 0 {
+            column(shared.classes.iter().enumerate().map(|(index, set)| {
+                row![
+                    text(format!(
+                        "{} ({} repeats)",
+                        &set.label,
+                        set.repeats.to_string()
+                    )),
+                    button("Remove").on_press(OptionsMessage::DeleteClass(index).into())
+                ]
+                .spacing(10)
+                .into()
+            }))
+            .spacing(5)
+            .into()
+        } else {
+            Element::from(text("None"))
+        },
         text("Pre-filled Prompt").font(Font {
             weight: Weight::Bold,
             ..Default::default()
