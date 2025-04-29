@@ -99,6 +99,10 @@ pub fn update(
                     .clone(),
             );
             local.images_cursor = 0;
+
+            if let Some(prefill) = &shared.prompt_prefill {
+                local.input_prompt = prefill.clone();
+            }
         }
 
         LabelingMessage::NextImage => {
@@ -108,6 +112,10 @@ pub fn update(
                 local.current_image = Some(path.clone());
             } else {
                 return Task::done(LabelingMessage::NoImagesLeft.into());
+            }
+
+            if let Some(prefill) = &shared.prompt_prefill {
+                local.input_prompt = prefill.clone();
             }
         }
 
@@ -154,6 +162,7 @@ pub fn update(
                 return Task::done(LabelingMessage::NextImage.into());
             }
         }
+
         LabelingMessage::SubmitLabel(class_index) => {
             let current_image = local
                 .current_image
