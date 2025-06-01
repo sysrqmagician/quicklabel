@@ -1,5 +1,7 @@
 # quicklabel
 
+![quicklabel showcase image with all views](assets/quicklabel_showcase.png)
+
 A fast and efficient image labeling tool for creating Text-To-Image finetuning datasets, as taken by the kohya_ss training scripts.
 
 ## Overview
