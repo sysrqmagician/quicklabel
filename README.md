@@ -2,17 +2,11 @@
 
 ![quicklabel showcase image with all views](assets/quicklabel_showcase.png)
 
-A fast and efficient image labeling tool for creating Text-To-Image finetuning datasets, as taken by the kohya_ss training scripts.
-
-## Overview
-
-quicklabel is designed for efficiently creating labeled image datasets in a dreambooth-style format. It simplifies the process of organizing your input images into class directories with accompanying text prompts.
+A fast image labeling tool for creating Text-To-Image finetuning datasets, as taken by the kohya_ss training scripts (dreambooth-style).
 
 ## Features
 
-- **Simple Workflow**: Three-step process for quick dataset organization
-- **Class Management**: Create custom classes with configurable repeat parameters
-- **Prompt Templates**: Pre-fill prompts to speed up repetitive labeling
+- **Simple Workflow**: Set directories, specify your classes, optionally set pre-filled prompt and repeats, then get to labeling. That's it.
 - **Trash Option**: Easily discard unwanted images
 
 ## Installation
@@ -50,6 +44,10 @@ Process your images:
 - Images are moved to the appropriate class folder with matching text files
 - Use the "Trash" button to discard unwanted images
 
+
+## Why make another tool?
+There are already a bunch of labeling tools around. Most of them, however, are meant to be used by professionals, who need to be able dynamically change the shape of their dataset, or large teams, who need to collaborate online.
+If you're a hobbyist looking to conveniently label some images for a LORA or similar, these tools are simply too complex. They get in your way.
 
 ## License
 
