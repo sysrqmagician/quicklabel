@@ -47,7 +47,7 @@ Process your images:
 
 ## Why make another tool?
 There are already a bunch of labeling tools around. Most of them, however, are meant to be used by professionals, who need to be able dynamically change the shape of their dataset, or large teams, who need to collaborate online.
-If you're a hobbyist looking to conveniently label some images for a LORA or similar, these tools are simply too complex. They get in your way.
+If you're a hobbyist looking to conveniently label some images for a LoRA or similar, these tools are simply too complex. They get in your way.
 
 ## License
 
